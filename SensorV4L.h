@@ -1,0 +1,107 @@
+#pragma once
+
+#include <vector>
+#include <list>
+#include <sstream>
+#include <memory>
+#include <linux/videodev2.h>
+#include <libv4l2.h>
+
+#define SENSOR_VIDEO_DRIVER "/dev/video-topaz1"   // GRINN
+
+#define SENSOR_ERR_SUCCESS							 0
+#define SENSOR_ERR_NO_DATA_AVAILABLE					-1
+#define SENSOR_ERR_BUFFER_MAP						-2
+#define SENSOR_ERR_INVALID_PARAMETER					-3
+#define SENSOR_ERR_IOCTL								-4
+#define SENSOR_ERR_OPEN_V4L_DRIVER					-5
+#define SENSOR_ERR_UNSUPPORTED_CONFIGURATION			-6
+#define SENSOR_ERR_AIRY_3D_NO_TDM_FOUND				-7
+#define SENSOR_ERR_AIRY_3D_NO_CALIBRATION_FOUND		-8
+#define SENSOR_ERR_ACCESS_DENIED						-9
+#define SENSOR_ERR_AIRY3D_CONFIGURATION				-10
+#define SENSOR_ERR_OPEN_V4L_POLLING					-11
+
+struct buffer
+{
+        void *start;
+        size_t length;
+};
+
+enum class V4LCtrlFlag { // Warning !!! can be ored !!
+	eDisable = V4L2_CTRL_FLAG_DISABLED, // control currently disableed and cannot be used
+	eGrabbed = V4L2_CTRL_FLAG_GRABBED, // currently beinused  by another application and cannot be modified
+	eReadOnly = V4L2_CTRL_FLAG_READ_ONLY, // control is Read only
+	eUpdate = V4L2_CTRL_FLAG_UPDATE, // control automatically updated by the hardware
+	eInactive = V4L2_CTRL_FLAG_INACTIVE, // contole is inactive ans should'nt be displayed to the user 
+	eSlider = V4L2_CTRL_FLAG_SLIDER, // suggests control can be represented as a slider in user interface
+	eWriteOnly = V4L2_CTRL_FLAG_WRITE_ONLY, // control is Write only
+	eVolatile = V4L2_CTRL_FLAG_VOLATILE, // Control value can changed without user intervention, often due to hardware or driver updates
+	eHasPayLoad = V4L2_CTRL_FLAG_HAS_PAYLOAD,
+	eExecuteOnWrite = V4L2_CTRL_FLAG_EXECUTE_ON_WRITE,
+	eModifyLayout = V4L2_CTRL_FLAG_MODIFY_LAYOUT
+};
+
+class V4LCtrl
+{
+	public:
+		V4LCtrl(const std::string &strName, const struct v4l2_queryctrl &Ctrl);
+		V4LCtrl(const std::string &strName, const struct v4l2_query_ext_ctrl &Ctrl);
+		void AddEnumEntry(const struct v4l2_querymenu &Menu);
+		uint32_t GetId() const;
+		enum v4l2_ctrl_type GetType() const;
+		std::string	GetName() const;
+		int64_t	GetMinimum() const;
+		int64_t	GetMaximum() const;
+		uint64_t GetStep() const;
+		int64_t GetDefaultValue() const;
+		V4LCtrlFlag GetFlag() const;
+		void GetEnumEntries(std::vector<std::string> &EnumVector) const;
+
+	private:
+		uint32_t m_u32Id;
+		enum v4l2_ctrl_type m_eType;
+		V4LCtrlFlag m_eFlag;
+		std::string m_strName;
+		int64_t	m_i64Minimum;
+		int64_t	m_i64Maximum;
+		uint64_t m_u64Step;
+		int64_t	m_i64DefaultValue;
+		std::vector<std::string> m_EnumEntries;
+};
+
+
+class SensorV4L
+{
+public:
+	SensorV4L();
+	~SensorV4L();
+	int CreateStream(int64_t i64SensorMode);
+	int DestroyStream();
+	int WaitForBuffer(struct v4l2_buffer &buf, void ** data);
+	int RequeueBuffer(struct v4l2_buffer &buf);
+	int StartStreaming();
+	int StopStreaming();
+	int GetControl(int64_t code, int64_t &value); // get control by code
+	int SetControl(int64_t code, int64_t value); // set control by code
+	int GetControl(const std::string & strName, int64_t &value); // get control by name
+	int SetControl(const std::string & strName, int64_t value); // set control by name
+	const std::list<std::unique_ptr<V4LCtrl>> & GetControlList() const;
+
+private:
+	int OpenDevice(const std::string & strNodeName);
+	int CloseDevice();
+	int InitializeFormat(int64_t i64SensorMode);
+	int xioctl(int request, void *arg);
+	int AllocateBuffers();
+	int FreeBuffers();
+	int QueueBuffers();
+	int ListControls();
+	
+private:
+	int m_fd;
+	const unsigned int m_NbBuffersMax;
+	unsigned int m_NbBuffers;
+	std::unique_ptr<struct buffer []> m_Buffers;
+	std::list<std::unique_ptr<V4LCtrl>> m_CtrlList;
+};
