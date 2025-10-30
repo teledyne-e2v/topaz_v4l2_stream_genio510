@@ -51,13 +51,13 @@ void runSensorOnly() {
 			std::cout << "Error " << nCodeRet << " WaitForBuffer" << std::endl;
 			return;
 		}
-		
+
 		{
 			std::stringstream ss;
 			ss << "image" << count << "_width_" << 1920 << "_height_" << 1080 << "_Mono8bit.raw"; // GRINN
 			SaveToBinaryFile(ss.str(), data, 1920 * 1080 * sizeof(uint8_t));   // GRINN    Mono8bit
 		}
-		
+
 		std::cout << "RequeueBuffer" << std::endl;
 		nCodeRet = sensor.RequeueBuffer(buf);
 		if (nCodeRet != SENSOR_ERR_SUCCESS) {
@@ -82,7 +82,7 @@ void runSensorOnly() {
 		return;
 	}
 }
-  
+
 int main(int argc, char* argv[])
 {
 	runSensorOnly();

@@ -33,7 +33,7 @@ enum class V4LCtrlFlag { // Warning !!! can be ored !!
 	eGrabbed = V4L2_CTRL_FLAG_GRABBED, // currently beinused  by another application and cannot be modified
 	eReadOnly = V4L2_CTRL_FLAG_READ_ONLY, // control is Read only
 	eUpdate = V4L2_CTRL_FLAG_UPDATE, // control automatically updated by the hardware
-	eInactive = V4L2_CTRL_FLAG_INACTIVE, // contole is inactive ans should'nt be displayed to the user 
+	eInactive = V4L2_CTRL_FLAG_INACTIVE, // contole is inactive ans should'nt be displayed to the user
 	eSlider = V4L2_CTRL_FLAG_SLIDER, // suggests control can be represented as a slider in user interface
 	eWriteOnly = V4L2_CTRL_FLAG_WRITE_ONLY, // control is Write only
 	eVolatile = V4L2_CTRL_FLAG_VOLATILE, // Control value can changed without user intervention, often due to hardware or driver updates
