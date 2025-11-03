@@ -40,7 +40,7 @@ static const struct Sensor_modes sensor_modes[4] = {
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
 SensorV4L::SensorV4L() :
-    m_fd(-1),  m_NbBuffersMax(2), m_NbBuffers(0)
+    m_fd(-1),  m_NbBuffersMax(4), m_NbBuffers(0)
 {
     OpenDevice(SENSOR_VIDEO_DRIVER, SENSOR_VIDEO_CTRLS);
 }
