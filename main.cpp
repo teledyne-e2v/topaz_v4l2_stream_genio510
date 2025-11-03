@@ -42,11 +42,12 @@ void runSensorOnly() {
 	}
 
 	struct v4l2_buffer buf;
+	struct v4l2_plane planes[VIDEO_MAX_PLANES];
 	void *data;
 
 	for (int count=1; count <= 10; count++) {
 		std::cout << "WaitForBuffer" << std::endl;
-		nCodeRet = sensor.WaitForBuffer(buf, &data);
+		nCodeRet = sensor.WaitForBuffer(buf, planes[0], &data);
 		if (nCodeRet != SENSOR_ERR_SUCCESS) {
 			std::cout << "Error " << nCodeRet << " WaitForBuffer" << std::endl;
 			return;

@@ -88,11 +88,13 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
 {
     struct v4l2_format fmt; // struct containing
     CLEAR(fmt);
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.width = sensor_modes[i64SensorMode].width;
-    fmt.fmt.pix.height = sensor_modes[i64SensorMode].height;
-    fmt.fmt.pix.pixelformat = sensor_modes[i64SensorMode].format;
-    fmt.fmt.pix.field = V4L2_FIELD_NONE;
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    fmt.fmt.pix_mp.width = sensor_modes[i64SensorMode].width;
+    fmt.fmt.pix_mp.height = sensor_modes[i64SensorMode].height;
+    fmt.fmt.pix_mp.pixelformat = sensor_modes[i64SensorMode].format;
+    fmt.fmt.pix_mp.field = V4L2_FIELD_NONE;
+    fmt.fmt.pix_mp.num_planes = 1;
+    fmt.fmt.pix_mp.colorspace = V4L2_COLORSPACE_SRGB;
     int nCodeRet = xioctl((int)VIDIOC_S_FMT, &fmt);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
     {
@@ -140,6 +142,7 @@ int SensorV4L::AllocateBuffers()
 {
     struct v4l2_buffer buf;
     struct v4l2_requestbuffers req;
+    struct v4l2_plane planes[VIDEO_MAX_PLANES];
 
     m_NbBuffers = 0;
 
@@ -147,7 +150,7 @@ int SensorV4L::AllocateBuffers()
     // initialize request buffer ask camera to allocate x buffers for camera
     CLEAR(req);
     req.count = m_NbBuffersMax;
-    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     req.memory = V4L2_MEMORY_MMAP;
     nCodeRet = xioctl((int)VIDIOC_REQBUFS, &req);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
@@ -156,17 +159,25 @@ int SensorV4L::AllocateBuffers()
         return nCodeRet;
     }
 
+    std::cout << "SensorV4L::AllocateBuffers: Available buffers: " << req.count << std::endl;
+
     // create a FIFO to store the x buffers
     m_Buffers.reset(new struct buffer[req.count]);
 
     for (m_NbBuffers = 0; m_NbBuffers < req.count; m_NbBuffers++) // initialize buffers
     {
         CLEAR(buf);
+        CLEAR(planes);
+
+        // https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-querybuf.html
+        // https://www.kernel.org/doc/html/v6.6/userspace-api/media/v4l/mmap.html#example-mapping-buffers-in-the-multi-planar-api
 
         // get a pointer on each buffer
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.type = req.type;
         buf.memory = V4L2_MEMORY_MMAP;
         buf.index = m_NbBuffers;
+        buf.length = VIDEO_MAX_PLANES;  // length for multi-planas is number of planes
+        buf.m.planes = planes;
 
         nCodeRet = xioctl((int)VIDIOC_QUERYBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
@@ -175,11 +186,19 @@ int SensorV4L::AllocateBuffers()
             return nCodeRet;
         }
 
+        if (buf.length != 1) {
+            std::cout << "SensorV4L::AllocateBuffers: expected 1 plane but got " << buf.length << std::endl;
+        }
+
+        std::cout << "  Buffer: " << m_NbBuffers << std::endl;
+        std::cout << "    " << "offset: " << buf.m.planes[0].m.mem_offset << std::endl;
+        std::cout << "    " << "length: " << buf.m.planes[0].length << std::endl;
+
         // map each buffer into the FIFO
-        m_Buffers[m_NbBuffers].length = buf.length;
-        m_Buffers[m_NbBuffers].start = mmap(NULL, buf.length,
+        m_Buffers[m_NbBuffers].length = buf.m.planes[0].length;
+        m_Buffers[m_NbBuffers].start = mmap(NULL, buf.m.planes[0].length,
         PROT_READ | PROT_WRITE, MAP_SHARED,
-        m_fd, buf.m.offset);
+        m_fd, buf.m.planes[0].m.mem_offset);
 
         if (MAP_FAILED == m_Buffers[m_NbBuffers].start)
         {
@@ -207,15 +226,19 @@ int SensorV4L::FreeBuffers()
 int SensorV4L::QueueBuffers()
 {
     struct v4l2_buffer buf;
+    struct v4l2_plane planes[VIDEO_MAX_PLANES];
 
     int nCodeRet;
     // put the buffers in queue
     for (unsigned int i = 0; i < m_NbBuffers; ++i)
     {
         CLEAR(buf);
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        CLEAR(planes);
+        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
         buf.memory = V4L2_MEMORY_MMAP;
         buf.index = i;
+        buf.m.planes = planes;
+        buf.length = 1;
         nCodeRet = xioctl((int)VIDIOC_QBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
         {
@@ -227,7 +250,7 @@ int SensorV4L::QueueBuffers()
     return SENSOR_ERR_SUCCESS;
 }
 
-int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, void ** data)
+int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes, void ** data)
 {
     if (! data)
         return SENSOR_ERR_INVALID_PARAMETER;
@@ -248,8 +271,12 @@ int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, void ** data)
 #endif
 
     CLEAR(buf); // clear the buffer
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    CLEAR(planes);
+
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     buf.memory = V4L2_MEMORY_MMAP;
+    buf.length = 1;
+    buf.m.planes = &planes;
 
     nCodeRet = xioctl((int)VIDIOC_DQBUF, &buf);
 
@@ -306,7 +333,7 @@ int SensorV4L::DestroyStream()
 
 int SensorV4L::StartStreaming()
 {
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     // Start stream (fill the buffers)
     return xioctl((int)VIDIOC_STREAMON, &type);
 
@@ -314,7 +341,7 @@ int SensorV4L::StartStreaming()
 
 int SensorV4L::StopStreaming()
 {
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     return xioctl((int)VIDIOC_STREAMOFF, &type); // stream off
 }
 

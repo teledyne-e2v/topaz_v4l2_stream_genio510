@@ -79,7 +79,7 @@ public:
 	~SensorV4L();
 	int CreateStream(int64_t i64SensorMode);
 	int DestroyStream();
-	int WaitForBuffer(struct v4l2_buffer &buf, void ** data);
+	int WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes, void ** data);
 	int RequeueBuffer(struct v4l2_buffer &buf);
 	int StartStreaming();
 	int StopStreaming();
