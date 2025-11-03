@@ -42,7 +42,7 @@ static const struct Sensor_modes sensor_modes[4] = {
 SensorV4L::SensorV4L() :
     m_fd(-1),  m_NbBuffersMax(2), m_NbBuffers(0)
 {
-    OpenDevice(SENSOR_VIDEO_DRIVER);
+    OpenDevice(SENSOR_VIDEO_DRIVER, SENSOR_VIDEO_CTRLS);
 }
 
 SensorV4L::~SensorV4L()
@@ -51,22 +51,35 @@ SensorV4L::~SensorV4L()
     CloseDevice();
 }
 
-int SensorV4L::OpenDevice(const std::string & strNodeName)
+int SensorV4L::OpenDevice(const std::string & strVideoNodeName, const std::string & strCtrlNodeName)
 {
-    m_fd = open(strNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
+    m_fd = open(strVideoNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
     if (m_fd < 0)
     {
-        std::cout << "SensorV4L::OpenV4L2Node: Cannot open device" << std::endl;
+        std::cout << "SensorV4L::OpenV4L2Node: Cannot open video device" << strVideoNodeName << std::endl;
         return SENSOR_ERR_OPEN_V4L_DRIVER;
     }
+    ListControls(m_fd);
 
-    return ListControls();
+    m_fd_ctrl = open(strCtrlNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
+    if (m_fd_ctrl < 0)
+    {
+        std::cout << "SensorV4L::OpenV4L2Node: Cannot open ctrl device" <<  strCtrlNodeName << std::endl;
+        // return SENSOR_ERR_OPEN_V4L_DRIVER;
+    } else {
+        ListControls(m_fd_ctrl);
+    }
+
+    return SENSOR_ERR_SUCCESS;
 }
 
 int SensorV4L::CloseDevice()
 {
     if (m_fd >=0)
             close(m_fd); // closing device.
+
+    if (m_fd_ctrl >=0)
+            close(m_fd_ctrl); // closing device.
 
     return SENSOR_ERR_SUCCESS;
 }
@@ -365,15 +378,17 @@ const std::list<std::unique_ptr<V4LCtrl>> & SensorV4L::GetControlList() const {
     return m_CtrlList;
 }
 
-int SensorV4L::ListControls()
+int SensorV4L::ListControls(int fd)
 {
     struct v4l2_queryctrl queryctrl = {};
     struct v4l2_querymenu querymenu = {};
     std::string strName;
     memset(&queryctrl, 0, sizeof(queryctrl));
 
+    std::cout << std::endl << "Controls on fd: " << fd << std::endl;
+
     queryctrl.id = V4L2_CTRL_FLAG_NEXT_CTRL;
-    while (ioctl(m_fd, VIDIOC_QUERYCTRL, &queryctrl) == 0) {
+    while (ioctl(fd, VIDIOC_QUERYCTRL, &queryctrl) == 0) {
         if (!(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)) {
             strName = std::string((const char *)queryctrl.name);
             std::replace(strName.begin(), strName.end(), ' ', '_');

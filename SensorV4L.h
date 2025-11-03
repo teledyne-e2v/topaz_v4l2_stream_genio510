@@ -8,6 +8,7 @@
 #include <libv4l2.h>
 
 #define SENSOR_VIDEO_DRIVER "/dev/video-topaz1"   // GRINN
+#define SENSOR_VIDEO_CTRLS "/dev/v4l-subdev-topaz1"
 
 #define SENSOR_ERR_SUCCESS							 0
 #define SENSOR_ERR_NO_DATA_AVAILABLE					-1
@@ -89,17 +90,18 @@ public:
 	const std::list<std::unique_ptr<V4LCtrl>> & GetControlList() const;
 
 private:
-	int OpenDevice(const std::string & strNodeName);
+	int OpenDevice(const std::string & strVideoNodeName, const std::string & strCtrlNodeName);
 	int CloseDevice();
 	int InitializeFormat(int64_t i64SensorMode);
 	int xioctl(int request, void *arg);
 	int AllocateBuffers();
 	int FreeBuffers();
 	int QueueBuffers();
-	int ListControls();
-	
+	int ListControls(int fd);
+
 private:
 	int m_fd;
+	int m_fd_ctrl;
 	const unsigned int m_NbBuffersMax;
 	unsigned int m_NbBuffers;
 	std::unique_ptr<struct buffer []> m_Buffers;
