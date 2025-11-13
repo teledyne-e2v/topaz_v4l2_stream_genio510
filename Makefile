@@ -23,5 +23,9 @@ SSH_OPTS = -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 target_install:
 	scp $(SSH_OPTS) $(BUILD_DIR)/sensortest root@$(DST_HOST):$(DST_DIR)
 
-target_get:
-	scp $(SSH_OPTS) root@$(DST_HOST):$(DST_DIR)/image* .
+target_get: images
+	scp $(SSH_OPTS) root@$(DST_HOST):$(DST_DIR)/image* images/
+
+images:
+	@mkdir -p images
+
