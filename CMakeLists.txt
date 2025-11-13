@@ -13,25 +13,5 @@ add_executable(sensortest
 target_compile_definitions(sensortest PUBLIC -D_UNIX_ -D_LINUX_)
 
 target_include_directories(sensortest PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/v4l-utils/lib/include/
-	${CMAKE_CURRENT_SOURCE_DIR}/v4l-utils/include/linux/
+	${CMAKE_CURRENT_SOURCE_DIR}/v4l-utils/lib/include
 )
-
-#target_link_libraries(sensortest PRIVATE 
-#
-#)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -32,10 +32,10 @@ struct Sensor_modes
         unsigned int height;
 };
 
-static const struct Sensor_modes sensor_modes[4] = {
-    {.format = V4L2_PIX_FMT_SBGGR8, .width = 1920, .height = 1080}, // GRINN
-    {.format = V4L2_PIX_FMT_GREY, .width = 1920, .height = 1080}};
-
+static const struct Sensor_modes sensor_modes[] = {
+    {.format = V4L2_PIX_FMT_SBGGR8,         .width = 1920, .height = 1080},  // 'BA81'
+    {.format = V4L2_PIX_FMT_MTISP_SBGGR10,  .width = 1920, .height = 1080},  // 'MBBA'
+};
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

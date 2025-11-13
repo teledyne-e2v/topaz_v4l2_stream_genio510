@@ -7,6 +7,18 @@
 #include <linux/videodev2.h>
 #include <libv4l2.h>
 
+// This is a vendor-custom define available only in vendor kernel.
+// Why cannot modify 'linux-libc-headers.bb' explained here:
+// https://docs.yoctoproject.org/dev-manual/new-recipe.html#using-headers-to-interface-with-devices
+// and
+// https://github.com/yoctoproject/poky/blob/b33a8abe77081a2bdda0d89c61736473b2f9bb8b/meta/recipes-kernel/linux-libc-headers/linux-libc-headers.inc#L7
+//
+// It is also possible to create own recipe for mediatek kernel headers and set
+// PREFERRED_PROVIDER_linux-libc-headers = "linux-libc-headers-genio"
+
+#define V4L2_PIX_FMT_MTISP_SBGGR10  v4l2_fourcc('M', 'B', 'B', 'A') /*  Packed 10-bit  */
+
+
 #define SENSOR_VIDEO_DRIVER   "/dev/video-topaz1"   // GRINN
 #define SENSOR_VIDEO_CTRLS    "/dev/v4l-subdev-topaz1"
 #define SENSOR_DEFAULT_MODE   1  // 0 - RAW8 / 1 - RAW10
