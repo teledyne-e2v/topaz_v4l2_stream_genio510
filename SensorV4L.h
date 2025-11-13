@@ -101,6 +101,9 @@ public:
 	int GetControl(const std::string & strName, int64_t &value); // get control by name
 	int SetControl(const std::string & strName, int64_t value); // set control by name
 	const std::list<std::unique_ptr<V4LCtrl>> & GetControlList() const;
+	uint32_t getWidth() const { return m_width; }
+	uint32_t getHeight() const { return m_height; }
+	uint32_t getPixelformat() const { return m_pixelformat; }
 	const std::string getFourCC();
 
 private:
@@ -121,4 +124,7 @@ private:
 	unsigned int m_NbBuffers;
 	std::unique_ptr<struct buffer []> m_Buffers;
 	std::list<std::unique_ptr<V4LCtrl>> m_CtrlList;
+	uint32_t m_width;
+	uint32_t m_height;
+	uint32_t m_pixelformat;
 };

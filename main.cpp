@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -55,8 +56,11 @@ void runSensorOnly() {
 
 		{
 			std::stringstream ss;
-			ss << "image" << count << "_width_" << 1920 << "_height_" << 1080 << "_Mono8bit.raw"; // GRINN
-			SaveToBinaryFile(ss.str(), data, 1920 * 1080 * sizeof(uint8_t));   // GRINN    Mono8bit
+			ss << "image" << std::setw(2) << std::setfill('0') << count
+				<< "_width_" << sensor.getWidth()
+				<< "_height_" << sensor.getHeight()
+				<< "_" << sensor.getFourCC() << ".raw";
+			SaveToBinaryFile(ss.str(), data, planes[0].length);
 		}
 
 		std::cout << "RequeueBuffer" << std::endl;

@@ -132,7 +132,9 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
         std::cerr << "SensorV4L::InitializeFormat: Warning: driver is sending image at width=" << fmt.fmt.pix.width << " height=" << fmt.fmt.pix.height << std::endl;
         return SENSOR_ERR_UNSUPPORTED_CONFIGURATION;
     }
-
+    m_width = fmt.fmt.pix_mp.width;
+    m_height = fmt.fmt.pix_mp.height;
+    m_pixelformat = fmt.fmt.pix_mp.pixelformat;
     return SENSOR_ERR_SUCCESS;
 }
 
