@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 #include "SensorV4L.h"
 
@@ -84,6 +85,24 @@ int SensorV4L::CloseDevice()
     return SENSOR_ERR_SUCCESS;
 }
 
+const std::string SensorV4L::getFourCC()
+{
+    return GetFourCCString(m_pixelformat);
+}
+
+const std::string SensorV4L::GetFourCCString(uint32_t fmt)
+{
+    std::vector<uint8_t> v {
+        (unsigned char)(fmt & 0xff),
+        (unsigned char)((fmt >> 8) & 0xff),
+        (unsigned char)((fmt >> 16) & 0xff),
+        (unsigned char)((fmt >> 24) & 0xff),
+    };
+
+    std::string code(v.begin(), v.end());
+    return code;
+}
+
 int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
 {
     struct v4l2_format fmt; // struct containing
@@ -104,7 +123,8 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
 
     if (fmt.fmt.pix.pixelformat != sensor_modes[i64SensorMode].format)
     {
-        std::cout << "SensorV4L::InitializeFormat: Libv4l didn't accept the current pixel format(" << fmt.fmt.pix.pixelformat << ")Can't proceed." << std::endl;
+        std::cout << "SensorV4L::InitializeFormat: video device format: '" << GetFourCCString(fmt.fmt.pix.pixelformat) << "'." << std::endl;
+        std::cout << "SensorV4L::InitializeFormat: video device didn't accept the current pixel format: '" << GetFourCCString(sensor_modes[i64SensorMode].format) << "'. Can't proceed." << std::endl;
         return SENSOR_ERR_UNSUPPORTED_CONFIGURATION;
     }
     if ((fmt.fmt.pix.width != sensor_modes[i64SensorMode].width) || (fmt.fmt.pix.height != sensor_modes[i64SensorMode].height))

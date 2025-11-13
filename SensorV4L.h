@@ -101,6 +101,7 @@ public:
 	int GetControl(const std::string & strName, int64_t &value); // get control by name
 	int SetControl(const std::string & strName, int64_t value); // set control by name
 	const std::list<std::unique_ptr<V4LCtrl>> & GetControlList() const;
+	const std::string getFourCC();
 
 private:
 	int OpenDevice(const std::string & strVideoNodeName, const std::string & strCtrlNodeName);
@@ -111,6 +112,7 @@ private:
 	int FreeBuffers();
 	int QueueBuffers();
 	int ListControls(int fd);
+	const std::string GetFourCCString(uint32_t fmt);
 
 private:
 	int m_fd;
