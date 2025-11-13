@@ -7,8 +7,9 @@
 #include <linux/videodev2.h>
 #include <libv4l2.h>
 
-#define SENSOR_VIDEO_DRIVER "/dev/video-topaz1"   // GRINN
-#define SENSOR_VIDEO_CTRLS "/dev/v4l-subdev-topaz1"
+#define SENSOR_VIDEO_DRIVER   "/dev/video-topaz1"   // GRINN
+#define SENSOR_VIDEO_CTRLS    "/dev/v4l-subdev-topaz1"
+#define SENSOR_DEFAULT_MODE   1  // 0 - RAW8 / 1 - RAW10
 
 #define SENSOR_ERR_SUCCESS							 0
 #define SENSOR_ERR_NO_DATA_AVAILABLE					-1

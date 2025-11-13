@@ -28,7 +28,7 @@ void runSensorOnly() {
 	SensorV4L sensor;
 
 	std::cout << "CreateStream" << std::endl;
-	int nCodeRet = sensor.CreateStream(0);
+	int nCodeRet = sensor.CreateStream(SENSOR_DEFAULT_MODE);
 	if (nCodeRet != SENSOR_ERR_SUCCESS) {
 		std::cout << "Error " << nCodeRet << " CreateStream" << std::endl;
 		return;
