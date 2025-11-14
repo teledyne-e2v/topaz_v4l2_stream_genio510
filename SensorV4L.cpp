@@ -57,7 +57,7 @@ int SensorV4L::OpenDevice(const std::string & strVideoNodeName, const std::strin
     m_fd = open(strVideoNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
     if (m_fd < 0)
     {
-        std::cout << "SensorV4L::OpenV4L2Node: Cannot open video device" << strVideoNodeName << std::endl;
+        std::cerr << "SensorV4L::OpenV4L2Node: Cannot open video device" << strVideoNodeName << std::endl;
         return SENSOR_ERR_OPEN_V4L_DRIVER;
     }
     ListControls(m_fd);
@@ -65,7 +65,7 @@ int SensorV4L::OpenDevice(const std::string & strVideoNodeName, const std::strin
     m_fd_ctrl = open(strCtrlNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
     if (m_fd_ctrl < 0)
     {
-        std::cout << "SensorV4L::OpenV4L2Node: Cannot open ctrl device" <<  strCtrlNodeName << std::endl;
+        std::cerr << "SensorV4L::OpenV4L2Node: Cannot open ctrl device" <<  strCtrlNodeName << std::endl;
         // return SENSOR_ERR_OPEN_V4L_DRIVER;
     } else {
         ListControls(m_fd_ctrl);
@@ -117,19 +117,19 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
     int nCodeRet = xioctl((int)VIDIOC_S_FMT, &fmt);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
     {
-        std::cout << "SensorV4L::InitializeFormat: error ioctl for VIDIOC_S_FMT " << std::endl;
+        std::cerr << "SensorV4L::InitializeFormat: error ioctl for VIDIOC_S_FMT " << std::endl;
         return nCodeRet;
     }
 
     if (fmt.fmt.pix.pixelformat != sensor_modes[i64SensorMode].format)
     {
-        std::cout << "SensorV4L::InitializeFormat: video device format: '" << GetFourCCString(fmt.fmt.pix.pixelformat) << "'." << std::endl;
-        std::cout << "SensorV4L::InitializeFormat: video device didn't accept the current pixel format: '" << GetFourCCString(sensor_modes[i64SensorMode].format) << "'. Can't proceed." << std::endl;
+        std::cerr << "SensorV4L::InitializeFormat: video device format: '" << GetFourCCString(fmt.fmt.pix.pixelformat) << "'." << std::endl;
+        std::cerr << "SensorV4L::InitializeFormat: video device didn't accept the current pixel format: '" << GetFourCCString(sensor_modes[i64SensorMode].format) << "'. Can't proceed." << std::endl;
         return SENSOR_ERR_UNSUPPORTED_CONFIGURATION;
     }
     if ((fmt.fmt.pix.width != sensor_modes[i64SensorMode].width) || (fmt.fmt.pix.height != sensor_modes[i64SensorMode].height))
     {
-        std::cout << "SensorV4L::InitializeFormat: Warning: driver is sending image at width=" << fmt.fmt.pix.width << " height=" << fmt.fmt.pix.height << std::endl;
+        std::cerr << "SensorV4L::InitializeFormat: Warning: driver is sending image at width=" << fmt.fmt.pix.width << " height=" << fmt.fmt.pix.height << std::endl;
         return SENSOR_ERR_UNSUPPORTED_CONFIGURATION;
     }
 
@@ -150,7 +150,7 @@ int SensorV4L::xioctl(int request, void *arg)
     if (r == -1)
     {
         if (nCodeRet != EAGAIN)
-            std::cout << "SensorV4L::xioctl: error " << nCodeRet << " " <<  strerror(nCodeRet) << std::endl;
+            std::cerr << "SensorV4L::xioctl: error " << nCodeRet << " " <<  strerror(nCodeRet) << std::endl;
 
         return (nCodeRet == EAGAIN) ? SENSOR_ERR_NO_DATA_AVAILABLE : SENSOR_ERR_IOCTL;
     }
@@ -175,7 +175,7 @@ int SensorV4L::AllocateBuffers()
     nCodeRet = xioctl((int)VIDIOC_REQBUFS, &req);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
     {
-        std::cout << "SensorV4L::AllocateBuffers: error ioctl for V4L2_BUF_TYPE_VIDEO_CAPTURE " << std::endl;
+        std::cerr << "SensorV4L::AllocateBuffers: error ioctl for V4L2_BUF_TYPE_VIDEO_CAPTURE " << std::endl;
         return nCodeRet;
     }
 
@@ -202,12 +202,12 @@ int SensorV4L::AllocateBuffers()
         nCodeRet = xioctl((int)VIDIOC_QUERYBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
         {
-            std::cout << "SensorV4L::AllocateBuffers: error ioctl for VIDIOC_QUERYBUF " << std::endl;
+            std::cerr << "SensorV4L::AllocateBuffers: error ioctl for VIDIOC_QUERYBUF " << std::endl;
             return nCodeRet;
         }
 
         if (buf.length != 1) {
-            std::cout << "SensorV4L::AllocateBuffers: expected 1 plane but got " << buf.length << std::endl;
+            std::cerr << "SensorV4L::AllocateBuffers: expected 1 plane but got " << buf.length << std::endl;
         }
 
         std::cout << "  Buffer: " << m_NbBuffers << std::endl;
@@ -222,7 +222,7 @@ int SensorV4L::AllocateBuffers()
 
         if (MAP_FAILED == m_Buffers[m_NbBuffers].start)
         {
-            std::cout << "SensorV4L::AllocateBuffers: error mmap for buffer " << m_NbBuffers << std::endl;
+            std::cerr << "SensorV4L::AllocateBuffers: error mmap for buffer " << m_NbBuffers << std::endl;
             return SENSOR_ERR_BUFFER_MAP;
         }
     }
@@ -262,7 +262,7 @@ int SensorV4L::QueueBuffers()
         nCodeRet = xioctl((int)VIDIOC_QBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
         {
-            std::cout << "error QueueBuffers ioctl VIDIOC_QBUF" << std::endl;
+            std::cerr << "error QueueBuffers ioctl VIDIOC_QBUF" << std::endl;
             return nCodeRet;
         }
     }
@@ -281,11 +281,11 @@ int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes,
     struct pollfd pfd = { m_fd, POLLIN, 0 };
     nCodeRet = poll( &pfd, 1, 1000);   // wait for 1000ms
     if (nCodeRet == -1) {
-        std::cout << "SensorV4L::WaitForBuffer: Error polling: " << strerror(errno) << std::endl;
+        std::cerr << "SensorV4L::WaitForBuffer: Error polling: " << strerror(errno) << std::endl;
         return SENSOR_ERR_OPEN_V4L_POLLING;
     }
     if (nCodeRet == 0) {
-        std::cout << "SensorV4L::WaitForBuffer: polling timeout" << std::endl;
+        std::cerr << "SensorV4L::WaitForBuffer: polling timeout" << std::endl;
         return SENSOR_ERR_NO_DATA_AVAILABLE;
     }
 #endif
@@ -310,7 +310,7 @@ int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes,
             return nCodeRet;
 
         default: {
-            std::cout << "error WaitForBuffer ioctl VIDIOC_DQBUF" << std::endl;
+            std::cerr << "error WaitForBuffer ioctl VIDIOC_DQBUF" << std::endl;
             return nCodeRet;
     }
     }
