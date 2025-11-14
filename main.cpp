@@ -6,6 +6,7 @@
 
 #include "SensorV4L.h"
 
+#include "unpack_raw10.h"
 
 void SaveToBinaryFile(const std::string &strFilePath, void * buffer, size_t unImageSize) {
 	std::ofstream file(strFilePath, std::ios::binary);
@@ -46,6 +47,19 @@ void runSensorOnly() {
 	struct v4l2_plane planes[VIDEO_MAX_PLANES];
 	void *data;
 
+	void *raw16_dst = NULL;
+	int raw16_required_dst_size;
+
+	if (sensor.isRAW10()) {
+		raw16_required_dst_size = sensor.getWidth() * sensor.getHeight() * 2;
+		raw16_dst = malloc(raw16_required_dst_size);
+		if (!raw16_dst) {
+			std::cerr << "Error malloc" << std::endl;
+			return;
+		}
+		std::cout << "Allocated " << raw16_required_dst_size << " buffer for converted frame" << std::endl;
+	}
+
 	for (int count=1; count <= 10; count++) {
 		std::cout << "WaitForBuffer" << std::endl;
 		nCodeRet = sensor.WaitForBuffer(buf, planes[0], &data);
@@ -54,13 +68,15 @@ void runSensorOnly() {
 			return;
 		}
 
-		{
-			std::stringstream ss;
-			ss << "image" << std::setw(2) << std::setfill('0') << count
-				<< "_width_" << sensor.getWidth()
-				<< "_height_" << sensor.getHeight()
-				<< "_" << sensor.getFourCC() << ".raw";
-			SaveToBinaryFile(ss.str(), data, planes[0].length);
+		std::stringstream file_base;
+		file_base << "image" << std::setw(2) << std::setfill('0') << count
+			<< "_" << sensor.getWidth() << "x" << sensor.getHeight()
+			<< "_" << sensor.getFourCC();
+
+		SaveToBinaryFile(file_base.str() + ".raw10", data, planes[0].length);
+		if (sensor.isRAW10()) {
+				unpack_image(data, raw16_dst, raw16_required_dst_size);
+				SaveToBinaryFile(file_base.str() + ".raw16", raw16_dst, raw16_required_dst_size);
 		}
 
 		std::cout << "RequeueBuffer" << std::endl;
@@ -71,6 +87,10 @@ void runSensorOnly() {
 		}
 
 		std::cout << "Grab image " << count << std::endl;
+	}
+	if (raw16_dst) {
+		free(raw16_dst);
+		raw16_dst = NULL;
 	}
 
 	std::cout << "StopStreaming" << std::endl;

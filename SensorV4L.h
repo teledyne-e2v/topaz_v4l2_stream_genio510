@@ -105,6 +105,7 @@ public:
 	uint32_t getHeight() const { return m_height; }
 	uint32_t getPixelformat() const { return m_pixelformat; }
 	const std::string getFourCC();
+	bool isRAW10() const { return getPixelformat() == V4L2_PIX_FMT_MTISP_SBGGR10; }
 
 private:
 	int OpenDevice(const std::string & strVideoNodeName, const std::string & strCtrlNodeName);

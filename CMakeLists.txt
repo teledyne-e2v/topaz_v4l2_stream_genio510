@@ -7,7 +7,7 @@ project(sensortest
 add_executable(sensortest
 	main.cpp
 	SensorV4L.cpp
-	SensorV4L.h
+	unpack_raw10.c
 )
 
 target_compile_definitions(sensortest PUBLIC -D_UNIX_ -D_LINUX_)
