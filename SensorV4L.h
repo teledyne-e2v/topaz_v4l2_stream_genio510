@@ -111,7 +111,7 @@ private:
 	int OpenDevice(const std::string & strVideoNodeName, const std::string & strCtrlNodeName);
 	int CloseDevice();
 	int InitializeFormat(int64_t i64SensorMode);
-	int xioctl(int request, void *arg);
+	int xioctl(int fd, int request, void *arg);
 	int AllocateBuffers();
 	int FreeBuffers();
 	int QueueBuffers();
@@ -119,8 +119,8 @@ private:
 	const std::string GetFourCCString(uint32_t fmt);
 
 private:
-	int m_fd;
-	int m_fd_ctrl;
+	int m_fd; // main driver file descriptor for video stream
+	int m_fd_ctrl; // secondary driver file descriptor for control
 	const unsigned int m_NbBuffersMax;
 	unsigned int m_NbBuffers;
 	std::unique_ptr<struct buffer []> m_Buffers;

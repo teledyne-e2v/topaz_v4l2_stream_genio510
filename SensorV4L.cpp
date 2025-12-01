@@ -62,7 +62,7 @@ int SensorV4L::OpenDevice(const std::string & strVideoNodeName, const std::strin
     }
     ListControls(m_fd);
 
-    m_fd_ctrl = open(strCtrlNodeName.c_str(), O_RDWR | O_NONBLOCK, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
+    m_fd_ctrl = open(strCtrlNodeName.c_str(), O_RDWR, 0);   // O_NONBLOCK => none blocking on VIDIOC_DQBUF
     if (m_fd_ctrl < 0)
     {
         std::cerr << "SensorV4L::OpenV4L2Node: Cannot open ctrl device" <<  strCtrlNodeName << std::endl;
@@ -114,7 +114,7 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
     fmt.fmt.pix_mp.field = V4L2_FIELD_NONE;
     fmt.fmt.pix_mp.num_planes = 1;
     fmt.fmt.pix_mp.colorspace = V4L2_COLORSPACE_SRGB;
-    int nCodeRet = xioctl((int)VIDIOC_S_FMT, &fmt);
+    int nCodeRet = xioctl(m_fd, (int)VIDIOC_S_FMT, &fmt);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
     {
         std::cerr << "SensorV4L::InitializeFormat: error ioctl for VIDIOC_S_FMT " << std::endl;
@@ -138,14 +138,14 @@ int SensorV4L::InitializeFormat(int64_t i64SensorMode) // initialize format
     return SENSOR_ERR_SUCCESS;
 }
 
-int SensorV4L::xioctl(int request, void *arg)
+int SensorV4L::xioctl(int fd, int request, void *arg)
 {
     int r;
     int nCodeRet;
 
     do
     {
-        r = ioctl(m_fd, request, arg);
+        r = ioctl(fd, request, arg);
         nCodeRet = errno;
     } while (r == -1 && (nCodeRet == EINTR));   // O_NONBLOCK => none blocking if  not ready => returns EAGAIN
 
@@ -174,7 +174,7 @@ int SensorV4L::AllocateBuffers()
     req.count = m_NbBuffersMax;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     req.memory = V4L2_MEMORY_MMAP;
-    nCodeRet = xioctl((int)VIDIOC_REQBUFS, &req);
+    nCodeRet = xioctl(m_fd, (int)VIDIOC_REQBUFS, &req);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
     {
         std::cerr << "SensorV4L::AllocateBuffers: error ioctl for V4L2_BUF_TYPE_VIDEO_CAPTURE " << std::endl;
@@ -201,7 +201,7 @@ int SensorV4L::AllocateBuffers()
         buf.length = VIDEO_MAX_PLANES;  // length for multi-planas is number of planes
         buf.m.planes = planes;
 
-        nCodeRet = xioctl((int)VIDIOC_QUERYBUF, &buf);
+        nCodeRet = xioctl(m_fd, (int)VIDIOC_QUERYBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
         {
             std::cerr << "SensorV4L::AllocateBuffers: error ioctl for VIDIOC_QUERYBUF " << std::endl;
@@ -261,7 +261,7 @@ int SensorV4L::QueueBuffers()
         buf.index = i;
         buf.m.planes = planes;
         buf.length = 1;
-        nCodeRet = xioctl((int)VIDIOC_QBUF, &buf);
+        nCodeRet = xioctl(m_fd, (int)VIDIOC_QBUF, &buf);
         if (nCodeRet != SENSOR_ERR_SUCCESS)
         {
             std::cerr << "error QueueBuffers ioctl VIDIOC_QBUF" << std::endl;
@@ -300,7 +300,7 @@ int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes,
     buf.length = 1;
     buf.m.planes = &planes;
 
-    nCodeRet = xioctl((int)VIDIOC_DQBUF, &buf);
+    nCodeRet = xioctl(m_fd, (int)VIDIOC_DQBUF, &buf);
 
     switch (nCodeRet)
     {
@@ -323,7 +323,7 @@ int SensorV4L::WaitForBuffer(struct v4l2_buffer &buf, struct v4l2_plane &planes,
 int SensorV4L::RequeueBuffer(struct v4l2_buffer &buf)
 {
     // Requeue the buffer
-    int nCodeRet = xioctl((int)VIDIOC_QBUF, &buf);
+    int nCodeRet = xioctl(m_fd, (int)VIDIOC_QBUF, &buf);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
         return nCodeRet;
 
@@ -357,14 +357,14 @@ int SensorV4L::StartStreaming()
 {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     // Start stream (fill the buffers)
-    return xioctl((int)VIDIOC_STREAMON, &type);
+    return xioctl(m_fd, (int)VIDIOC_STREAMON, &type);
 
 }
 
 int SensorV4L::StopStreaming()
 {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-    return xioctl((int)VIDIOC_STREAMOFF, &type); // stream off
+    return xioctl(m_fd, (int)VIDIOC_STREAMOFF, &type); // stream off
 }
 
 
@@ -377,8 +377,8 @@ int SensorV4L::GetControl(int64_t code, int64_t &value) // get control by code
     ec.id = code; // this code can be obtain using the command v4l2-ctl -l
     ecs.controls = &ec;
     ecs.count = 1;
-    ecs.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
-    int nCodeRet = xioctl((int)VIDIOC_G_EXT_CTRLS, &ecs);
+    //ecs.ctrl_class = V4L2_CTRL_CLASS_CAMERA; // Do NOT set ecs.ctrl_class unless you want to set all controls in a class
+    int nCodeRet = xioctl(m_fd_ctrl, (int)VIDIOC_G_EXT_CTRLS, &ecs);
     if (nCodeRet != SENSOR_ERR_SUCCESS)
         return nCodeRet;
 
@@ -395,10 +395,10 @@ int SensorV4L::SetControl(int64_t code, int64_t value) // set control by code
     ec.id = code; // this code can be obtain using the command v4l2-ctl -l
     ecs.controls = &ec;
     ecs.count = 1;
-    ecs.ctrl_class = V4L2_CTRL_CLASS_CAMERA;
+    //ecs.ctrl_class = V4L2_CTRL_CLASS_CAMERA; // Do NOT set ecs.ctrl_class unless you want to set all controls in a class
     ec.value64 = value;
     ec.size = 0;
-    return xioctl((int)VIDIOC_S_EXT_CTRLS, &ecs);
+    return xioctl(m_fd_ctrl, (int)VIDIOC_S_EXT_CTRLS, &ecs);
 }
 
 int SensorV4L::GetControl(const std::string & strName, int64_t &value) // get control by name
