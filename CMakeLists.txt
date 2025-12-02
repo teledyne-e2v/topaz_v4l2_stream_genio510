@@ -8,6 +8,7 @@ add_executable(sensortest
 	main.cpp
 	SensorV4L.cpp
 	unpack_raw10.c
+	SensorI2C.cpp
 )
 
 target_compile_definitions(sensortest PUBLIC -D_UNIX_ -D_LINUX_)
