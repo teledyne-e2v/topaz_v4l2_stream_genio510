@@ -134,8 +134,10 @@ public:
     // int createDump(ModuleCtrl *moduleCtrl, const std::string& filename);
     int createDump(const std::string& filename);
 
-
-    int read_sensor_feedback();
+    //Sensor feedback
+    int read_sensor_feedback(std::string *data);
+    int print_sensor_feedback();
+    int save_sensor_feedback(const std::string& filename);
     
 };
 

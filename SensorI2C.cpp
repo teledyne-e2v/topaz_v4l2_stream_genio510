@@ -531,9 +531,8 @@ int ModuleCtrl::createDump(const std::string& filename)
 /************************************************
  *Read sensor feedback
  ************************************************/
-int ModuleCtrl::read_sensor_feedback()
+int ModuleCtrl::read_sensor_feedback(std::string *data)
 {
-
 	// PARAMETERS
 	int Address;
 	int Value;
@@ -573,7 +572,7 @@ int ModuleCtrl::read_sensor_feedback()
 
     oss << " | global_state=0x" << Value 
     << " (" << Value << ")";
-	if (Value==0x100) oss << " => SDTBY"<< std::endl;
+	if (Value==0x01) oss << " => STANDBY"<< std::endl;
 	else if (Value==0x02) oss << " => WAKE_UP_IF" << std::endl;
 	else if (Value==0x04) oss << " => IDLE_IF" << std::endl;
 	else if (Value==0x08) oss << " => WAKE_UP_ALL" << std::endl;
@@ -583,7 +582,6 @@ int ModuleCtrl::read_sensor_feedback()
 	else if (Value==0x80) oss << " => WAIT_END_CHAIN" << std::endl;
 	else oss << std::endl;
 	
-
 	//Read line length fb
 	Address = REG_FB_LINE_LENGTH;
 	Value = 0;
@@ -665,17 +663,27 @@ int ModuleCtrl::read_sensor_feedback()
     << " (" << Value << ")"
     << std::endl;
 
-
-    std::string data = oss.str();
-
-    std::cout << data;
-
-    std::ofstream file("feedback.txt");
-    if (file) {
-        file << data;
-    }
-    file.close();
-
+    *data = oss.str();
 
 	return 0;
+} 
+
+int ModuleCtrl::print_sensor_feedback()
+{
+    std::string fb_data;
+    this->read_sensor_feedback(&fb_data);
+	std::cout << fb_data; // print feedback
+    return 0;
+}
+
+int ModuleCtrl::save_sensor_feedback(const std::string& filename)
+{
+    std::string fb_data;
+    this->read_sensor_feedback(&fb_data);
+    std::ofstream file(filename); // save feedback into text file
+    if (file) {
+        file << fb_data; 
+    }
+    file.close();
+    return 0;
 }
